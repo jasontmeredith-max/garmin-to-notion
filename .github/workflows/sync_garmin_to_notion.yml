@@ -1,10 +1,17 @@
-name: Sync Garmin to Notion
+name: Sync Garmin Sleep to Notion
+
+# Trimmed down from the original template to ONLY sync sleep + HRV data,
+# since that's all Jason's fork is being used for. Runs daily at 9:00 AM
+# America/Chicago (14:00 UTC during CDT / 15:00 UTC during CST) — adjust
+# the cron below if you'd rather it run at a different time.
 
 on:
   schedule:
-    - cron: '0 1 * * *' # Daily
+    - cron: '0 14 * * *'
+  workflow_dispatch: {}
+
 env:
-  TZ: 'America/Toronto'
+  TZ: 'America/Chicago'
 
 jobs:
   sync:
@@ -18,18 +25,11 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run script
+      - name: Run sleep sync
         env:
           GARMIN_AUTH_TOKEN: ${{ secrets.GARMIN_AUTH_TOKEN }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_DB_ID: ${{ secrets.NOTION_DB_ID }}
-          NOTION_PR_DB_ID: ${{ secrets.NOTION_PR_DB_ID }}
-          NOTION_STEPS_DB_ID: ${{ secrets.NOTION_STEPS_DB_ID }}
           NOTION_SLEEP_DB_ID: ${{ secrets.NOTION_SLEEP_DB_ID }}
-          GARMIN_ACTIVITIES_FETCH_LIMIT: ${{ vars.GARMIN_ACTIVITIES_FETCH_LIMIT }}
-          TZ: 'America/Toronto'
+          TZ: 'America/Chicago'
         run: |
-          uv run python -m src.workflows.garmin-activities
-          uv run python -m src.workflows.personal-records
-          uv run python -m src.workflows.daily-steps
           uv run python -m src.workflows.sleep-data
