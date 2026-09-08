@@ -41,7 +41,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_SECRETS_PAT }}
         run: |
           if [ -f refreshed_garmin_token.json ]; then
-            gh secret set GARMIN_AUTH_TOKEN --repo "${{ github.repository }}" --body-file refreshed_garmin_token.json
+            gh secret set GARMIN_AUTH_TOKEN --repo "${{ github.repository }}" < refreshed_garmin_token.json
             echo "GARMIN_AUTH_TOKEN secret updated with the refreshed token."
           else
             echo "No refreshed token file was produced — leaving GARMIN_AUTH_TOKEN secret unchanged."
