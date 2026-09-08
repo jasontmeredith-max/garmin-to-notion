@@ -1,3 +1,4 @@
+import contextlib
 import os
 from dataclasses import dataclass
 
@@ -36,15 +37,22 @@ def _get_garmin_client() -> Garmin:
     # library treats it as token data rather than a file path. This means the
     # access token is refreshed in memory on each run via diauth.garmin.com
     # (standard OAuth2 refresh — separate from the SSO endpoints that are
-    # rate-limited), but the refreshed token is never written back anywhere.
+    # rate-limited).
     #
-    # This is safe as long as Garmin issues non-rotating refresh tokens, which
-    # is currently the case. If that ever changes and runs start failing with
-    # 401s, we might need to add a workflow step that writes the updated token
-    # back to the GARMIN_AUTH_TOKEN secret after each run via `gh secret set`,
-    # or otherwise persist the token across runs.
+    # Garmin now rotates the underlying refresh token every few days, which
+    # used to make every run after that fail with a 401. To fix this for
+    # good, we write the freshly-refreshed token out to a file (path given by
+    # GARMIN_TOKEN_OUTPUT_PATH) after every successful login. A separate
+    # workflow step then saves that file back into the GARMIN_AUTH_TOKEN
+    # secret via `gh secret set`, so the next run always starts current.
     garmin_client = Garmin()
     garmin_client.login(tokenstore=garmin_auth_token)
+
+    token_output_path = os.getenv("GARMIN_TOKEN_OUTPUT_PATH")
+    if token_output_path:
+        with contextlib.suppress(Exception):
+            with open(token_output_path, "w") as f:
+                f.write(garmin_client.client.dumps())
 
     return garmin_client
 
